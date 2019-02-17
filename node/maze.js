@@ -146,14 +146,12 @@ class Somnambulist {
     this.x = character.x; 
     this.y = character.y;
     this.f = character.f; // facing dir
-    this.history = []; //history of moves
-    this.explored = [[this.x,this.y]]
   }
   getCharacter(){
     var character = {};
     const grid = this.grid;
     for (var yl = grid.length, y = 0; y < yl; y++) {
-      for (var xl = grid.length, x = 0; x < xl; x++) {
+      for (var xl = grid[y].length, x = 0; x < xl; x++) {
         if ( grid[y][x] !== ' ' && grid[y][x] !== "#" ){
           switch ( grid[y][x] ){
             case "^":
@@ -176,32 +174,12 @@ class Somnambulist {
     }
     return character;
   }
-  // we'll get to it
-  // directly change position
-  explore(pos, history){
-    history.push(this.getPos());
-    var x = pos[0];
-    var y = pos[1];
-    this.x = x;
-    this.y = y;
-    this.mark(pos);
-    return history;
-  }
   move(pos){
     this.history.push(this.getPos());
     var x = pos[0];
     var y = pos[1];
     this.x = x;
     this.y = y;
-  }
-  // mark position as explored
-  mark(pos){
-    var asString = pos.toString();
-    this.explored.push(asString);
-  }
-  isMarked(pos){
-    var asString = pos.toString();
-    return this.explored.includes(asString);
   }
   /*
     check is position is final
@@ -261,83 +239,6 @@ class Somnambulist {
     // do check of specific row anyway, w/e
     return [x,y];
   }
-  makelinks(){
-    /**
-    links = {
-      '4,4' { '4,3' }
-      '4,3' { '5,3 }
-      '5,3' { '6,3', '5,3' }
-      '6,3' { '6,4' }
-      '6,4' { '6,5' }
-      '6,5' { '6,6' }
-      '6,6' { '5,6' }
-      '5,6' { '4,6' }
-      '4,6' { '3,6' }
-      '3,6' { '2,6' }
-      '2,6' { '1,6', '2,5' }
-      ...
-    }
-    **/
-    var position = this.getPos();
-    var queue = [position];
-    let links = {};
-    let marked = [];
-    while(queue.length > 0){
-      var currentPos = queue.shift();
-      var moves = this.getMoves(currentPos);
-      var cpstring = currentPos.toString();
-      links[cpstring] = [];
-      for (var move of moves) {
-        let mstring = move.toString();
-        if (this.getThingAt(move) !== " ")
-          continue;
-        if (this.getThingAt(move) === "!"){ 
-          history.push(move);
-          queue = [];
-          break;
-        }
-        links[cpstring].push(mstring)
-        if ( !links[mstring] )
-          queue.push(move)
-      }
-      // break;
-    }
-    return links;
-    // if we get here its unsolvable
-  }
-  shortest_path(links){
-    var queue = [];
-    var marked = [];
-    var distance_so_far = 0;
-    while ( queue.length > 0 ){
-      var current = queue.pop();
-      marked.push(current);
-      // distance_so_far = try_move(current, )
-      // var 
-    }hm
-  }
-
-  // newest attempt 22:27 sat 16
-
-  // histories = [[1,1 1,2 1,3 2,3 3,3]]
-  // and then when diverges...
-  // histories = [
-  //			  [1,1 1,2 1,3 2,3 3,3 4,3 5,3],
-  //              [1,1 1,2 1,3 2,3 3,3 2,3 1,3]
-  //			 ]
-  // histories could be a heap
-  // function(paths = [])
-  //     sp = histories.popMin()
-  //     move = sp[last].getMoves()
-  //     
-  //         
-  //         
-  // search(path)
-  // then with this method we always choose the shorter path to move
-  // or first when equal
-  // when a path hits a dead end, remove it from histories
-  // 
-  // the bokhari dijkstra-esque algorithm using paths and heap
   bokhari(){
   	const start = this.getPos();
   	const startString = start.toString();
@@ -391,29 +292,37 @@ var testMaze = [
   ];
 var testMazeTwo = [
    //012345678901234567
-    '##################',//0
-    '#^               #',//1
-    '#                #',//2
-    '#     #          #',//3
-    '#                #',//4
-    '#                #',//5
-    '#   ## ##### # ###',//6
-    '#     #          #',//20
-    '#     #    #     #',//21
-    '#          #     #',//22
-    '#     #    #     #',//23
-    '#          #     #',//22
-    '#          #     #',//22
-    '#          #     #',//22
-    '#     #    #     #',//24
-    '#     #    #     #',//25
-    '#     #    #     #',//26
-    '################ #',//27
+    '#######################################',//0
+    '#^                             #      #',//1
+    '#                        #     #      #',//2
+    '#     #                  #     #      #',//3
+    '#                        #     #      #',//4
+    '#                        #     #      #',//5
+    '#   ## #####             #     #  # ###',//6
+    '#     #                  #     # #    #',//7
+    '#     #    #             ##    # #    #',//8
+    '#          #             ##    # #    #',//9
+    '#     #    #             ##    # #    #',//10
+    '#          #             ##    # #    #',//11
+    '#          #             ##    # #    #',//12
+    '#          #             ##    # #    #',//12
+    '#          #             ##    # #    #',//12
+    '#          #             ##    # #    #',//12
+    '#          #             ##    # #    #',//12
+    '#          #             ##    # #    #',//12
+    '#          #             ##      #    #',//12
+    '#          #              #      #    #',//12
+    '#          #              #      #    #',//12
+    '#          #              #      #    #',//13
+    '#     #    #              #      #    #',//14
+    '#     #    #              #    ###    #',//15
+    '#     #    #              #    #      #',//16
+    '################################ ######',//17
 ];
 var testMazeThree = [
    //0123456789012
 	'#############',//0
-	'# #   #     #',//1
+	'# #   #      ',//1
 	'#   # # ### #',//2
 	'# # # #   # #',//3
 	'# ###   ### #',//4
