@@ -14,12 +14,14 @@ var pos = [
 // with the js array
 
 /**
-         0
-      1      2
+          0
+      1       2
     3   4   5   6
    7 8 9 0 1 2 3 4
+
+  Heap algorithm using array length, smallest on top
 **/
-class Heap {
+class ArrayHeap {
   constructor(values=[]){
     this.values = values;
   }
@@ -29,8 +31,17 @@ class Heap {
   set(i,v){
     this.values[i] = v;
   }
+  getLen(i){
+	return this.values[i].length;
+  }
   get(i){
     return this.values[i];
+  }
+  swap(i,w){
+    const a = this.get(i);
+    const b = this.get(w);
+    this.set(i,b);
+    this.set(w,a);
   }
   parent(i){
     return Math.floor(i/2);
@@ -43,24 +54,20 @@ class Heap {
   }
   isSingle(i){
     return (
-      i == this.size() - 1
+      this.left(i) > (this.size() - 1)
     );
   }
   isLeaf(i){
-    let li = this.left(i)
+    const li = this.left(i)
     return (li == this.size() - 1)
   }
-  swap(i,w){
-    const a = this.get(i);
-    const b = this.get(w);
-    this.set(i,b);
-    this.set(w,a);
-  }
   up(i){
-    let pi = this.parent(i);
-    let pv = this.get(pi);
-    let iv = this.get(i);
-    if ( pv > iv ){
+    const pi = this.parent(i);
+    const pv = this.get(pi);
+    const pl = this.getLen(pi);
+    const iv = this.get(i);
+    const il = this.getLen(i);
+    if ( pl > il ){
       this.swap(i,pi);
       this.up(pi);
     }
@@ -70,26 +77,30 @@ class Heap {
       return;
     }
 
-    let iv   = this.get(i);
+    const iv = this.get(i);
+    const il = this.getLen(i);
 
-    let li = this.left(i);
-    let lv = this.get(li);
+    const li = this.left(i);
+    const lv = this.get(li);
+	const ll = this.getLen(li);
+
     if ( this.isLeaf(i) ){
-      if ( lv < iv ){
+      if ( ll < il ){
         this.swap(i,li);
         return this.down(li);
       }
       return;
     }
     
-    let ri = this.right(i);
-    let rv = this.get(ri);
+    const ri = this.right(i);
+    const rv = this.get(ri);
+    const rl = this.getLen(ri);
 
-    if ( lv < rv && lv < iv ){
+    if ( ll < rl && ll < il ){
         this.swap(i,li);
         return this.down(li);
     }
-    if ( rv < iv ){
+    if ( rl < il ){
         this.swap(i,ri);
         return this.down(ri);
     }
@@ -105,14 +116,28 @@ class Heap {
   popMin(){
     var min = this.getMin();
     var last = this.values.pop();
-    this.set(0,last);
-    this.down(0);
+    if (this.size() > 0){	
+    	this.set(0, last);
+    	this.down(0);
+    }
     return min;
   }
 }
-var heapTest = new Heap();
-
-
+/*
+var heapTest = new ArrayHeap([]);
+for (var i = 0; i < 20; i++) {
+	var test = Math.ceil( Math.random() * 30 );
+	var array = Array(test).fill(0); // oh my!
+	// console.log(array);
+	heapTest.insert(array)
+}
+// console.log('---')
+while( heapTest.size()){
+	// console.log(heapTest);
+	var x = heapTest.popMin();
+	console.log(x.length);
+}
+*/
 class Somnambulist {
   constructor(grid){
     // this.grid = this.grok(grid);
@@ -146,7 +171,6 @@ class Somnambulist {
           }
           character.x = x;
           character.y = y;
-          // grid[y][x] = " "; // for search algorithm later on
         }
       }
     }
@@ -195,12 +219,10 @@ class Somnambulist {
     let moves = [];
     // temporary
     // this.explore(pos);
-    this.x = pos[0];
-    this.y = pos[1];
-    const N = this.getUp();
-    const E = this.getRight();
-    const S = this.getDown();
-    const W = this.getLeft();
+    const N = this.getUp(pos);
+    const E = this.getRight(pos);
+    const S = this.getDown(pos);
+    const W = this.getLeft(pos);
     moves.push(N);
     moves.push(E);
     moves.push(S);
@@ -217,24 +239,24 @@ class Somnambulist {
     const y = pos[1];
     return this.grid[y][x];
   }
-  getUp(){
-    const x = this.x;
-    const y = this.y-1;
+  getUp(pos){
+    const x = pos[0];
+    const y = pos[1]-1;
     return [x,y];
   }
-  getDown(){
-    const x = this.x;
-    const y = this.y+1;
+  getDown(pos){
+    const x = pos[0];
+    const y = pos[1]+1;
     return [x,y];
   }
-  getLeft(){
-    const x = this.x-1;
-    const y = this.y;
+  getLeft(pos){
+    const x = pos[0]-1;
+    const y = pos[1];
     return [x,y];
   }
-  getRight(){
-    const x = this.x+1;
-    const y = this.y;
+  getRight(pos){
+    const x = pos[0]+1;
+    const y = pos[1];
     // pretty sure all grids are square, but..
     // do check of specific row anyway, w/e
     return [x,y];
@@ -292,7 +314,67 @@ class Somnambulist {
       marked.push(current);
       // distance_so_far = try_move(current, )
       // var 
+    }hm
+  }
+
+  // newest attempt 22:27 sat 16
+
+  // histories = [[1,1 1,2 1,3 2,3 3,3]]
+  // and then when diverges...
+  // histories = [
+  //			  [1,1 1,2 1,3 2,3 3,3 4,3 5,3],
+  //              [1,1 1,2 1,3 2,3 3,3 2,3 1,3]
+  //			 ]
+  // histories could be a heap
+  // function(paths = [])
+  //     sp = histories.popMin()
+  //     move = sp[last].getMoves()
+  //     
+  //         
+  //         
+  // search(path)
+  // then with this method we always choose the shorter path to move
+  // or first when equal
+  // when a path hits a dead end, remove it from histories
+  // 
+  // the bokhari dijkstra-esque algorithm using paths and heap
+  bokhari(){
+  	const start = this.getPos();
+  	const startString = start.toString();
+  	const init_path = [start];
+  	let paths = new ArrayHeap();
+    paths.insert(init_path);
+    let solution = null;
+    let explored = [startString];
+    	console.log(start);
+
+    while ( paths.size() > 0 && !this.isSolved ){
+    	const path = paths.popMin();
+    	const last = path[path.length-1];
+    	const moves = this.getMoves(last);
+    	for ( let move of moves ){
+    		// console.log(move);
+		  	const point = this.getThingAt(move);
+    		const moveString = move.toString();
+    		// console.log( moveString);
+    		if ( point !== " " && point !== "!" ){
+    			continue;
+    		}
+    		if ( explored.includes(moveString)){
+    			continue;
+    		}
+    		const exploration = [...path];
+    		exploration.push(move);
+    		explored.push(moveString);
+    		if ( point === "!" ){	
+    			this.isSolved = true;
+    			solution = exploration;
+    			break;
+    		}
+    		paths.insert(exploration);
+    	}
     }
+	return solution;
   }
 
 }
@@ -306,10 +388,46 @@ var testMaze = [
     '#  ### # #', //5
     '#      # #', //6
     '######## #'  //7
-  ]
-var me = new Somnambulist(testMaze);
-
-console.log(me.makelinks())
+  ];
+var testMazeTwo = [
+   //012345678901234567
+    '##################',//0
+    '#^               #',//1
+    '#                #',//2
+    '#     #          #',//3
+    '#                #',//4
+    '#                #',//5
+    '#   ## ##### # ###',//6
+    '#     #          #',//20
+    '#     #    #     #',//21
+    '#          #     #',//22
+    '#     #    #     #',//23
+    '#          #     #',//22
+    '#          #     #',//22
+    '#          #     #',//22
+    '#     #    #     #',//24
+    '#     #    #     #',//25
+    '#     #    #     #',//26
+    '################ #',//27
+];
+var testMazeThree = [
+   //0123456789012
+	'#############',//0
+	'# #   #     #',//1
+	'#   # # ### #',//2
+	'# # # #   # #',//3
+	'# ###   ### #',//4
+	'#  ######   #',//5
+	'#     #######',//6
+	'#   #       #',//7
+	'##### # ### #',//8
+	'#   # #   # #',//9
+	'# # ####### #',//10
+	'#v#         #',//11
+	'#############' //12
+]
+var me = new Somnambulist(testMazeTwo);
+console.log(me.bokhari())
 function escape(maze) {
   // Have a nice sleep ;)
 
