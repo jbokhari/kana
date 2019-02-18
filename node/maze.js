@@ -1,25 +1,7 @@
 // Return the array of movements to execute to get out of the maze
-var pos = [
-  0,//x
-  0,//y
-];
-// for the purpose of this kana we rep bottom left as 0,0
-// then bot left as [0,n]... etc...
-// where n is height of grid-1
-// 0,0 1,0 etc ...
-// 0,1 1,1 ...
-// etc ...
-// ...
-// this isn't a classica grid but works better...
-// with the js array
 
 /**
-          0
-      1       2
-    3   4   5   6
-   7 8 9 0 1 2 3 4
-
-  Heap algorithm using array length, smallest on top
+  Min-heap based on array length
 **/
 class ArrayHeap {
   constructor(values=[]){
@@ -123,21 +105,6 @@ class ArrayHeap {
     return min;
   }
 }
-/*
-var heapTest = new ArrayHeap([]);
-for (var i = 0; i < 20; i++) {
-	var test = Math.ceil( Math.random() * 30 );
-	var array = Array(test).fill(0); // oh my!
-	// console.log(array);
-	heapTest.insert(array)
-}
-// console.log('---')
-while( heapTest.size()){
-	// console.log(heapTest);
-	var x = heapTest.popMin();
-	console.log(x.length);
-}
-*/
 class Somnambulist {
   constructor(grid){
     // this.grid = this.grok(grid);
@@ -146,7 +113,15 @@ class Somnambulist {
     this.x = character.x; 
     this.y = character.y;
     this.f = character.f; // facing dir
+    this.story = []; // the final story, as it were
   }
+  /**
+   * Return { 
+       x, // character x
+       y, // character y
+       f  // character facing direction
+   * }
+   **/
   getCharacter(){
     var character = {};
     const grid = this.grid;
@@ -174,16 +149,9 @@ class Somnambulist {
     }
     return character;
   }
-  move(pos){
-    this.history.push(this.getPos());
-    var x = pos[0];
-    var y = pos[1];
-    this.x = x;
-    this.y = y;
-  }
-  /*
-    check is position is final
-  */
+  /**
+   * Check is position is final
+   **/
   isOutOfBounds(move){
     const x = move[0];
     const y = move[1];
@@ -193,10 +161,11 @@ class Somnambulist {
     }
     return true;
   }
+  /**
+   * Return ALL moves from position
+   **/
   getMoves(pos){
     let moves = [];
-    // temporary
-    // this.explore(pos);
     const N = this.getUp(pos);
     const E = this.getRight(pos);
     const S = this.getDown(pos);
@@ -207,9 +176,17 @@ class Somnambulist {
     moves.push(W);
     return moves;
   }
-  getPos(){
+  /**
+   * Return character position as [x,y]
+   **/
+  getStartingPosition(){
     return [this.x,this.y];
   }
+  /**
+   * Return item at grid point
+   * E.g., " " or "#"
+   * if "out of bounds" then returns "!", aka you win!
+   **/
   getThingAt(pos){
     if (this.isOutOfBounds(pos))
       return "!";
@@ -217,21 +194,33 @@ class Somnambulist {
     const y = pos[1];
     return this.grid[y][x];
   }
+  /**
+   * Get one point up from `pos`
+   */
   getUp(pos){
     const x = pos[0];
     const y = pos[1]-1;
     return [x,y];
   }
+  /**
+   * Get one point down from `pos`
+   */
   getDown(pos){
     const x = pos[0];
     const y = pos[1]+1;
     return [x,y];
   }
+  /**
+   * Get one point left from `pos`
+   */
   getLeft(pos){
     const x = pos[0]-1;
     const y = pos[1];
     return [x,y];
   }
+  /**
+   * Get one point right from `pos`
+   */
   getRight(pos){
     const x = pos[0]+1;
     const y = pos[1];
@@ -239,25 +228,26 @@ class Somnambulist {
     // do check of specific row anyway, w/e
     return [x,y];
   }
-  bokhari(){
-  	const start = this.getPos();
+  /**
+   * Dijkstra-esque algorithm to find shortest path
+   * Return null if no solution
+   */
+  solve(){
+  	const start = this.getStartingPosition();
   	const startString = start.toString();
   	const init_path = [start];
   	let paths = new ArrayHeap();
     paths.insert(init_path);
-    let solution = null;
     let explored = [startString];
-    	console.log(start);
+    let solution = [];
 
     while ( paths.size() > 0 && !this.isSolved ){
     	const path = paths.popMin();
     	const last = path[path.length-1];
     	const moves = this.getMoves(last);
     	for ( let move of moves ){
-    		// console.log(move);
 		  	const point = this.getThingAt(move);
     		const moveString = move.toString();
-    		// console.log( moveString);
     		if ( point !== " " && point !== "!" ){
     			continue;
     		}
@@ -277,6 +267,56 @@ class Somnambulist {
     }
 	return solution;
   }
+  getInstruction(){
+  	const solution = this.solve();
+  	let dir = this.f;
+  	let newDir = dir;
+  	while( solution.length > 0 ){
+  		var pos2 = pos1 || null;
+  		var pos1 = solution.shift();
+  		if ( ! pos2 )
+  			continue;
+	  	const x1 = pos1[0];
+	  	const y1 = pos1[1];
+	  	const x2 = pos2[0];
+	  	const y2 = pos2[1];
+	  	// positive change is right (E)
+	  	const dx = x1 - x2;
+	  	// positive change is down (S)
+	  	const dy = y1 - y2;
+
+	  	if (dy === 1){
+	  		newDir = "S";
+	  	}
+  		if (dy === -1){
+  			newDir = "N";
+  		}
+  		if (dx === 1){
+  			newDir = "E";
+  		}
+  		if (dx === -1){
+  			newDir = "W";
+  		}
+	  	const orient = this.getTurns(dir, newDir);
+	  	if (orient){
+			this.story.push(orient)
+	  	}
+		this.story.push("F");
+		dir = newDir;
+  	}
+  	return this.story;
+
+  }
+  getTurns(dir, newDir){
+  	if ( !newDir || dir === newDir){
+  		return;
+  	}
+    const i = [null, "R", "B", "L"]
+  	const r = {"N" : 0, "E" : 1, "S" : 2, "W" : 3};
+  	// positive change is R
+  	const count = (r[newDir] - r[dir] + 4) % 4;
+	return i[count];
+  }
 
 }
 var testMaze = [
@@ -288,57 +328,11 @@ var testMaze = [
     '#  #^# # #', //4
     '#  ### # #', //5
     '#      # #', //6
-    '######## #'  //7
+    '##########'  //7
   ];
-var testMazeTwo = [
-   //012345678901234567
-    '#######################################',//0
-    '#^                             #      #',//1
-    '#                        #     #      #',//2
-    '#     #                  #     #      #',//3
-    '#                        #     #      #',//4
-    '#                        #     #      #',//5
-    '#   ## #####             #     #  # ###',//6
-    '#     #                  #     # #    #',//7
-    '#     #    #             ##    # #    #',//8
-    '#          #             ##    # #    #',//9
-    '#     #    #             ##    # #    #',//10
-    '#          #             ##    # #    #',//11
-    '#          #             ##    # #    #',//12
-    '#          #             ##    # #    #',//12
-    '#          #             ##    # #    #',//12
-    '#          #             ##    # #    #',//12
-    '#          #             ##    # #    #',//12
-    '#          #             ##    # #    #',//12
-    '#          #             ##      #    #',//12
-    '#          #              #      #    #',//12
-    '#          #              #      #    #',//12
-    '#          #              #      #    #',//13
-    '#     #    #              #      #    #',//14
-    '#     #    #              #    ###    #',//15
-    '#     #    #              #    #      #',//16
-    '################################ ######',//17
-];
-var testMazeThree = [
-   //0123456789012
-	'#############',//0
-	'# #   #      ',//1
-	'#   # # ### #',//2
-	'# # # #   # #',//3
-	'# ###   ### #',//4
-	'#  ######   #',//5
-	'#     #######',//6
-	'#   #       #',//7
-	'##### # ### #',//8
-	'#   # #   # #',//9
-	'# # ####### #',//10
-	'#v#         #',//11
-	'#############' //12
-]
-var me = new Somnambulist(testMazeTwo);
-console.log(me.bokhari())
-function escape(maze) {
-  // Have a nice sleep ;)
 
-  return [];
+function escape(maze) {
+	const me = new Somnambulist(maze);
+	return me.getInstruction();
 }
+console.log(escape(testMaze));
