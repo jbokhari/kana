@@ -4,24 +4,23 @@
 const L = ["g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v"];
 
 // a lot of zeros
-const P = (2**53).toString(2).slice(-52);
+const P = "0000";
 
 // Return a stringified representation of the passed map.
 function stringifyMap(map) {
-  let t="",l = map[0].length.toString(16).split(''),c,r,q,s,h;
+  let t="",l = map[0].length.toString(16).split(''),c,r,q,s;
 
   // r, row length, is represented by non hex letters (see L)
   r = l.map(q=>{;return L[parseInt(q,16)]}).join('');
   // convert map to flat hexidecimal
   map.map(a=>{a.map(b=>{t+=b?"1":"0"})});
 
-  // fix for MAX_SAFE_INTEGER
+  // converts chunks of binary to hex
   do{
     s = s?s:"";
-    q=t.slice(-52);
-    t=t.slice(0,Math.max(t.length-52,0))
-    s=((h?'':P) + parseInt(q,2).toString(16)).slice(-14)+s
-    h=1;
+    q=t.slice(-4);
+    t=t.slice(0,Math.max(t.length-4,0))
+    s=parseInt(q,2).toString(16).slice(-1)+s
   } while(t.length>0)
   return s + r
 }
@@ -43,27 +42,13 @@ function parseMap(mapString) {
     // reconstruct binary as array
     var q = o.join('')
     do {
-        c = q.slice(-14);
-        b = parseInt(c,16).toString(2) + b;
-        q = q.slice(0,Math.max(q.length-14,0));
+        c=q.slice(-1);
+        // note chunks must be 4 chars long, unless its the first chunk
+        b=((q.length==1?'':P)+parseInt(c,16).toString(2)).slice(-4)+b;
+        q=q.slice(0,q.length-1);
     } while(q.length > 0);
-    b = b.split('');
-    console.log(b.toString());
-    // q.forEach(a=>{
-    //     b.push(parseInt(a,16).toString(2));
-    // });
 
-    // b[0] may be < 52
-    // but b[n] n>0 is definitely 52, so add padding
-    for (let y = b.length, i = 1; i < y; i++) {
-        b[i] = (P + b[i]).slice(-52);
-    }
-
-    b = b.join('');
-
-    // pad entire string for initial false values
-    // here we assume the first row is not all false
-    // if it is, compression will break
+    // pad string for initial false values
     e = Math.ceil(b.length/l)*l;
     b = (P + b).slice(-e);
 
@@ -77,10 +62,11 @@ function parseMap(mapString) {
     return f;
 }
 
-const map = [[false,false,true,false,false,false,true,false,false,false,true,true,false,false,false],[false,false,true,true,true,true,false,false,true,false,false,true,false,false,true],[false,true,false,false,false,true,true,false,false,true,false,false,true,true,false],[false,false,false,true,false,true,true,false,false,false,false,false,true,false,false],[true,false,true,false,true,false,false,false,true,true,false,true,false,false,false],[true,true,true,false,false,false,false,false,true,true,false,true,false,false,false],[false,false,false,false,false,true,true,false,false,true,false,true,false,true,true],[false,false,true,true,false,true,false,true,false,true,false,true,false,true,true],[true,true,false,false,false,true,false,false,false,true,false,false,true,false,true],[true,false,false,true,false,false,false,true,false,false,true,false,true,false,false],[true,false,true,true,false,true,true,false,false,false,false,true,false,true,false],[true,false,false,false,false,true,true,false,true,true,false,true,true,true,true]];
+const map = [[false,false,false,false,false,false,true,true,true,true,true,false,true],[false,false,false,true,false,false,true,false,false,true,true,false,false],[true,false,true,true,false,false,true,false,true,false,false,true,false],[true,true,false,false,false,false,false,false,true,true,false,true,false],[false,false,false,true,true,false,false,true,false,false,true,false,true],[false,false,true,true,true,true,false,true,true,false,true,false,false]];
 var encoded = stringifyMap(map);
 var decoded = parseMap(encoded);
 console.log(encoded, map.length * map[0].length, encoded.length);
+console.log(decoded.toString());
 console.log(decoded.toString() === map.toString());
 
 // var compressed = stringifyMap(map);
